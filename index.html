@@ -1,0 +1,84 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+    <title>UPS Statistics</title>
+    <script type="text/javascript" src="jquery-3.6.0.min.js"></script>
+<meta charset="UTF-8">
+<script>
+window.onload = function () {
+
+var dataPointsLoad = [];
+var dataPointsTime = [];
+
+//Replace text file's path according to your requirement.
+jQuery.get("data.txt", function(data) {
+    var allLines = data.split('\n');
+    if (allLines.length > 0) {
+        for (var i = 0; i < allLines.length; i++) {
+            allLines[i] = allLines[i].replace(/(\r\n|\n|\r)/gm, "");
+            dataPointsLoad.push({
+                x: parseInt(allLines[i].split(" ")[0]), // timestamp
+                y: parseInt(allLines[i].split(" ")[1]) // load
+            });
+            dataPointsTime.push({
+                x: parseInt(allLines[i].split(" ")[0]), // timestamp
+                y: parseInt(allLines[i].split(" ")[2])  // battery time
+            })
+        }
+    }
+
+var chart = new CanvasJS.Chart("chartContainer", {
+	animationEnabled: true,
+	title:{
+		text: "UPS load and remaining time chart"
+	},
+	toolTip: {
+		shared: true
+	},
+	axisX: {
+		title: "Time (last 24h)",
+        valueFormatString: "HH:mm",
+		suffix : ""
+	},
+	axisY: {
+		title: "UPS load (%)",
+		titleFontColor: "#4F81BC",
+		suffix : " %",
+		lineColor: "#4F81BC",
+		tickColor: "#4F81BC"
+	},
+	axisY2: {
+		title: "Battery time (min)",
+		titleFontColor: "#C0504E",
+		suffix : " min",
+		lineColor: "#C0504E",
+		tickColor: "#C0504E"
+	},
+	data: [{
+		type: "spline",
+		name: "Load (%)",
+        xValueType: "dateTime",
+		xValueFormatString: "D MMM Y HH:mm",
+		yValueFormatString: "# '%'",
+		dataPoints: []
+	},
+	{
+		type: "spline",  
+		axisYType: "secondary",
+		name: "Battery time (min)",
+		yValueFormatString: "#,##0.# min",
+		dataPoints: []
+	}]
+});
+chart.options.data[0].dataPoints = dataPointsLoad;
+chart.options.data[1].dataPoints = dataPointsTime;
+chart.render();
+});
+}
+</script>
+</head>
+<body>
+<div id="chartContainer" style="height: 370px; max-width: 920px; margin: 0px auto;"></div>
+<script src="canvasjs.min.js"></script>
+</body>
+</html>
