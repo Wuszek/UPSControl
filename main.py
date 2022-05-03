@@ -40,7 +40,7 @@ class UPSControl:
 
     @staticmethod
     def write_data(timestamp, battload, battery, voltage):
-        with open("data.txt", "r+") as file:
+        with open("data.txt", "w+") as file:
             lines = file.readlines()
             if len(lines) >= 1440:
                 file.seek(0)
