@@ -9,6 +9,7 @@ window.onload = function () {
 
 var dataPointsLoad = [];
 var dataPointsTime = [];
+var dataPointsVolt = [];
 
 //Replace text file's path according to your requirement.
 jQuery.get("data.txt", function(data) {
@@ -24,13 +25,17 @@ jQuery.get("data.txt", function(data) {
                 x: parseInt(allLines[i].split(" ")[0]), // timestamp
                 y: parseInt(allLines[i].split(" ")[2])  // battery time
             })
+            dataPointsVolt.push({
+                x: parseInt(allLines[i].split(" ")[0]), // timestamp
+                y: parseInt(allLines[i].split(" ")[3]) // voltage
+            })
         }
     }
 
 var chart = new CanvasJS.Chart("chartContainer", {
 	animationEnabled: true,
 	title:{
-		text: "UPS load and remaining time chart"
+		text: "UPS load and battery life in time"
 	},
 	toolTip: {
 		shared: true
@@ -73,12 +78,48 @@ var chart = new CanvasJS.Chart("chartContainer", {
 chart.options.data[0].dataPoints = dataPointsLoad;
 chart.options.data[1].dataPoints = dataPointsTime;
 chart.render();
+
+var chart2 = new CanvasJS.Chart("chartContainer2", {
+	animationEnabled: true,
+	title:{
+		text: "UPS input voltage in time"
+	},
+	toolTip: {
+		shared: true
+	},
+	axisX: {
+		title: "Time (last 24h)",
+        valueFormatString: "HH:mm",
+		suffix : ""
+	},
+	axisY: {
+		title: "UPS Voltage (V)",
+		titleFontColor: "#4F81BC",
+		suffix : " V",
+		lineColor: "#4F81BC",
+		tickColor: "#4F81BC"
+	},
+	data: [{
+		type: "spline",
+		name: "Voltage (V)",
+        xValueType: "dateTime",
+		xValueFormatString: "D MMM Y HH:mm",
+		yValueFormatString: "# 'V'",
+		dataPoints: []
+	}]
+});
+
+chart2.options.data[0].dataPoints = dataPointsVolt;
+chart2.render();
+
 });
 }
 </script>
 </head>
 <body>
 <div id="chartContainer" style="height: 370px; max-width: 920px; margin: 0px auto;"></div>
+<br><br><br>
+<div id="chartContainer2" style="height: 370px; max-width: 920px; margin: 0px auto;"></div>
 <script src="canvasjs.min.js"></script>
 </body>
 </html>
