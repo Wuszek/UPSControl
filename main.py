@@ -20,6 +20,29 @@ class UPSControl:
             process.kill()
             exit(f"ERROR \t: (Subprocess) Error while executing cmd: {command}\nException msg: {e}".expandtabs(5))
 
+    @staticmethod
+    def setup():
+        if os.path.isfile("data.txt"):
+            print(f"INFO \t: (Setup) data.txt already exists.".expandtabs(5))
+            pass
+        else:
+            try:
+                open("data.txt", 'a').close()
+            except OSError as e:
+                exit(f"ERROR \t: (Setup) Exception occurred when creating data.txt file. "
+                     f"Exception msg: {e}".expandtabs(5))
+            print(f"INFO \t: (Setup) data.txt created successfully.".expandtabs(5))
+        if os.path.isfile(".webhook"):
+            print(f"INFO \t: (Setup) .webhook already exists.".expandtabs(5))
+        else:
+            try:
+                open(".webhook", 'a').close()
+            except OSError as e:
+                exit(f"ERROR \t: (Setup) Exception occurred when creating .webhook file. "
+                     f"Exception msg: {e}".expandtabs(5))
+            print(f"INFO \t: (Setup) .webhook created successfully. REMEMBER TO FILL IT WITH URL!".expandtabs(5))
+        exit(f"INFO \t: (Setup) Setup finished.".expandtabs(5))
+
     def get_data(self, ups_n):
         timestamp_milliseconds = round(timestamp_timer.time() * 1000)
         command = f"upsc {ups_n}@localhost"
@@ -72,13 +95,15 @@ class UPSControl:
                 open(filename, 'wb').write(f.content)
                 os.popen('chmod +x discord.sh').read()
             if os.path.isfile('.webhook'):
+                if os.stat(".webhook").st_size == 0:
+                    exit("ERROR \t: (Discord Prep) .webhook file is empty. Fill it with webhook URL.".expandtabs(5))
                 pass
             else:
-                exit("ERROR \t: (Discord) No .webhook file. Create one with webhook url inside. "
+                exit("ERROR \t: (Discord Prep) No .webhook file. Create one with webhook url inside. "
                      "Message will not be sent.".expandtabs(5))
         except Exception:
-            exit("ERROR \t: (Discord) Some exception occured. Exiting.")
-        print(f"INFO \t: (Discord) Setup went correctly.".expandtabs(5))
+            exit("ERROR \t: (Discord Prep) Some exception occurred. Exiting.".expandtabs(5))
+        print(f"INFO \t: (Discord Prep) Setup went correctly.".expandtabs(5))
         return
 
     def discord_notification(self, battload, battery, status):
@@ -88,13 +113,19 @@ class UPSControl:
                         --avatar "https://avatarlink.com/logo.png" \
                         --text "**POWER WENT DOWN!** \\nStatus: {status} ' \
                       f'\\nLoad: {battload}% \\nBattery time: {battery}min"'
-            self.subprocess_cmd(command)
-            print(f"INFO \t: (Discord) Message sent correctly.".expandtabs(5))
+            out, _ = self.subprocess_cmd(command)
+            output = out.decode("UTF-8")
+            if "error!" in output:
+                exit(f"ERROR \t: (Discord) Error while executing .discord.sh. Message: {output}".expandtabs(5))
+            elif "fatal" in output:
+                exit(f"ERROR \t: (Discord) Error while executing .discord.sh. Message: {output}".expandtabs(5))
+            else:
+                print(f"INFO \t: (Discord) Message sent correctly.".expandtabs(5))
 
     @staticmethod
     def getOpt(argv):
         parser = argparse.ArgumentParser \
-            (usage="python3 main.py [-i <ups name> -n <if notify> -h <help>]",
+            (usage="python3 main.py [-i <ups name> -n -h -s]",
              description="Simple python script, gathering data from UPS connected to Synology server with optional "
                          "Discord notification if UPS starts working on battery.",
              epilog="© 2022, wiktor.kobiela", prog="UPSControl", add_help=False,
@@ -105,15 +136,21 @@ class UPSControl:
         available.add_argument('-i', action='store', dest="ups_name", metavar="<ups name>",
                                help='Provide ups name for upsc command. Default is "ups".', default='ups')
         available.add_argument('-n', action='store_true', dest="notify",
-                               help="Send Discord notification if UPS is working on battery. Default is false.",
-                               default=False)
+                               help="Boolean flag to send Discord notification if UPS is working on battery. "
+                                    "Default is false.", default=False)
+        available.add_argument('-s', action='store_true', dest="setup",
+                               help="Boolean flag to setup files for data storage and discord notifications. "
+                                    "Default is false.", default=False)
+
         available.add_argument('-h', action='help', help='Show this help message and exit.')
         args = parser.parse_args()
-        return args.ups_name, args.notify
+        return args.ups_name, args.notify, args.setup
 
 
 ups = UPSControl()
-ups_name, notify = ups.getOpt(sys.argv[1:])
+ups_name, notify, setup = ups.getOpt(sys.argv[1:])
+if setup:
+    ups.setup()
 t, load, batt, volt, stat = ups.get_data(ups_n=ups_name)
 ups.write_data(timestamp=t, battload=load, battery=batt, voltage=volt)
 if notify:
