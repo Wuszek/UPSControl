@@ -1,6 +1,8 @@
 import re
 import subprocess
+import sys
 import time as timestamp_timer
+import argparse
 
 
 class UPSControl:
@@ -16,9 +18,9 @@ class UPSControl:
             process.kill()
             print(f"ERROR \t: Error while executing cmd: {command}\nException msg: {e}".expandtabs(5))
 
-    def get_data(self):
+    def get_data(self, ups_n):
         timestamp_milliseconds = round(timestamp_timer.time() * 1000)
-        command = "upsc ups@localhost"
+        command = f"upsc {ups_n}@localhost"
         out, _ = self.subprocess_cmd(command)
 
         load_r = r"(?<=ups.load: )(.*)(?=\n)"
@@ -30,7 +32,7 @@ class UPSControl:
 
         load_match = re.findall(load_r, current_info)[0]
         battery_runtime_match = re.findall(battery_runtime_r, current_info)[0]
-        battery_runtime_match = int(battery_runtime_match)//60
+        battery_runtime_match = int(battery_runtime_match) // 60
         input_voltage_match = re.findall(input_voltage_r, current_info)[0]
         ups_status_match = re.findall(ups_status_r, current_info)[0]
         print(f"INFO \t: {timestamp_milliseconds} timestamp milliseconds".expandtabs(5))
@@ -38,7 +40,6 @@ class UPSControl:
         print(f"INFO \t: {battery_runtime_match}min battery remaining".expandtabs(5))
         print(f"INFO \t: {input_voltage_match}V input voltage".expandtabs(5))
         print(f"INFO \t: {ups_status_match} - UPS status".expandtabs(5))
-
         return timestamp_milliseconds, load_match, battery_runtime_match, input_voltage_match, ups_status_match
 
     @staticmethod
@@ -51,20 +52,38 @@ class UPSControl:
                 file.writelines(lines[1:])
             file.writelines(f"{timestamp} {battload} {battery} {voltage}\n")
 
-    def discord_notification(self, load, battery, status):
+    def discord_notification(self, battload, battery, status):
         if status != "OL":
             command = f'./discord.sh \
-                        --username "UPS_bot" \
+                        --username "UPS Bot" \
                         --avatar "https://avatarlink.com/logo.png" \
-                        --text "POWER WENT DOWN!\n UPS STATUS IS {status}"'
-            #self.subprocess_cmd(command)
-            print(f"POWER DOWN!\nStatus: {status}\nLoad: {load}% \nBatt_time: {battery}min")
+                        --text "POWER WENT DOWN! \\nStatus: {status} \\nLoad: {battload}% Battery time: {battery}min"'
+            self.subprocess_cmd(command)
+
+    @staticmethod
+    def getOpt(argv):
+        parser = argparse.ArgumentParser \
+            (usage="python3 main.py [-i <ups name> -n <if notify> -h <help>]",
+             description="Simple python script, gathering data from UPS connected to Synology server with optional "
+                         "Discord notification if UPS starts working on battery.",
+             epilog="© 2022, wiktor.kobiela", prog="UPSControl", add_help=False,
+             formatter_class=lambda prog: argparse.HelpFormatter(prog, max_help_position=120, width=250))
+
+        available = parser.add_argument_group('Available (optional) arguments:')
+
+        available.add_argument('-i', action='store', dest="ups_name", metavar="<ups name>",
+                               help='Provide ups name for upsc command. Default is "ups".', default='ups')
+        available.add_argument('-n', action='store_true', dest="notify",
+                               help="Send Discord notification if UPS is working on battery. Default is false.",
+                               default=False)
+        available.add_argument('-h', action='help', help='Show this help message and exit.')
+        args = parser.parse_args()
+        return args.ups_name, args.notify
 
 
 ups = UPSControl()
-# t, load, batt, volt, stat = ups.get_data()
-ups.discord_notification("10", "20", "BT")
-# ups.write_data(t, load, batt, volt)
-
-
-
+ups_name, notify = ups.getOpt(sys.argv[1:])
+t, load, batt, volt, stat = ups.get_data(ups_n=ups_name)
+ups.write_data(timestamp=t, battload=load, battery=batt, voltage=volt)
+if notify:
+    ups.discord_notification(battload=load, battery=batt, status=stat)
