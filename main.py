@@ -1,8 +1,10 @@
+import argparse
+import os
 import re
+import requests
 import subprocess
 import sys
 import time as timestamp_timer
-import argparse
 
 
 class UPSControl:
@@ -16,7 +18,7 @@ class UPSControl:
             return outs, errs
         except (subprocess.TimeoutExpired, ValueError, OSError) as e:
             process.kill()
-            print(f"ERROR \t: Error while executing cmd: {command}\nException msg: {e}".expandtabs(5))
+            exit(f"ERROR \t: (Subprocess) Error while executing cmd: {command}\nException msg: {e}".expandtabs(5))
 
     def get_data(self, ups_n):
         timestamp_milliseconds = round(timestamp_timer.time() * 1000)
@@ -28,37 +30,66 @@ class UPSControl:
         input_voltage_r = r"(?<=input.voltage: )(.*)(?=\n)"
         ups_status_r = r"(?<=ups.status: )(.*)(?=\n)"
 
-        current_info = out.decode("utf-8")
+        try:
+            current_info = out.decode("utf-8")
+            load_match = re.findall(load_r, current_info)[0]
+            battery_runtime_match = re.findall(battery_runtime_r, current_info)[0]
+            battery_runtime_match = int(battery_runtime_match) // 60
+            input_voltage_match = re.findall(input_voltage_r, current_info)[0]
+            ups_status_match = re.findall(ups_status_r, current_info)[0]
+        except Warning as w:
+            exit(f"ERROR \t: (Get Data) Exception msg: {w}".expandtabs(5))
 
-        load_match = re.findall(load_r, current_info)[0]
-        battery_runtime_match = re.findall(battery_runtime_r, current_info)[0]
-        battery_runtime_match = int(battery_runtime_match) // 60
-        input_voltage_match = re.findall(input_voltage_r, current_info)[0]
-        ups_status_match = re.findall(ups_status_r, current_info)[0]
-        print(f"INFO \t: {timestamp_milliseconds} timestamp milliseconds".expandtabs(5))
-        print(f"INFO \t: {load_match}% ups load".expandtabs(5))
-        print(f"INFO \t: {battery_runtime_match}min battery remaining".expandtabs(5))
-        print(f"INFO \t: {input_voltage_match}V input voltage".expandtabs(5))
-        print(f"INFO \t: {ups_status_match} - UPS status".expandtabs(5))
+        print(f"INFO \t: (Get Data) {timestamp_milliseconds} timestamp milliseconds".expandtabs(5))
+        print(f"INFO \t: (Get Data) {load_match}% UPS load".expandtabs(5))
+        print(f"INFO \t: (Get Data) {battery_runtime_match}min battery remaining".expandtabs(5))
+        print(f"INFO \t: (Get Data) {input_voltage_match}V input voltage".expandtabs(5))
+        print(f"INFO \t: (Get Data) {ups_status_match} - UPS status".expandtabs(5))
         return timestamp_milliseconds, load_match, battery_runtime_match, input_voltage_match, ups_status_match
 
     @staticmethod
     def write_data(timestamp, battload, battery, voltage):
-        with open("data.txt", "w+") as file:
-            lines = file.readlines()
-            if len(lines) >= 1440:
-                file.seek(0)
-                file.truncate()
-                file.writelines(lines[1:])
-            file.writelines(f"{timestamp} {battload} {battery} {voltage}\n")
+        try:
+            with open("data.txt", "r+") as file:
+                lines = file.readlines()
+                if len(lines) >= 1440:
+                    file.seek(0)
+                    file.truncate()
+                    file.writelines(lines[1:])
+                file.writelines(f"{timestamp} {battload} {battery} {voltage}\n")
+        except OSError as e:
+            exit(f"ERROR \t: (Write Data) Exception msg: {e}".expandtabs(5))
+
+    @staticmethod
+    def discord_preparation():
+        try:
+            if os.path.isfile('discord.sh'):
+                pass
+            else:
+                filename = "discord.sh"
+                url = 'https://raw.githubusercontent.com/ChaoticWeg/discord.sh/master/discord.sh'
+                f = requests.get(url)
+                open(filename, 'wb').write(f.content)
+                os.popen('chmod +x discord.sh').read()
+            if os.path.isfile('.webhook'):
+                pass
+            else:
+                exit("ERROR \t: (Discord) No .webhook file. Create one with webhook url inside. "
+                     "Message will not be sent.".expandtabs(5))
+        except Exception:
+            exit("ERROR \t: (Discord) Some exception occured. Exiting.")
+        print(f"INFO \t: (Discord) Setup went correctly.".expandtabs(5))
+        return
 
     def discord_notification(self, battload, battery, status):
         if status != "OL":
             command = f'./discord.sh \
                         --username "UPS Bot" \
                         --avatar "https://avatarlink.com/logo.png" \
-                        --text "POWER WENT DOWN! \\nStatus: {status} \\nLoad: {battload}% Battery time: {battery}min"'
+                        --text "**POWER WENT DOWN!** \\nStatus: {status} ' \
+                      f'\\nLoad: {battload}% \\nBattery time: {battery}min"'
             self.subprocess_cmd(command)
+            print(f"INFO \t: (Discord) Message sent correctly.".expandtabs(5))
 
     @staticmethod
     def getOpt(argv):
@@ -86,4 +117,5 @@ ups_name, notify = ups.getOpt(sys.argv[1:])
 t, load, batt, volt, stat = ups.get_data(ups_n=ups_name)
 ups.write_data(timestamp=t, battload=load, battery=batt, voltage=volt)
 if notify:
+    ups.discord_preparation()
     ups.discord_notification(battload=load, battery=batt, status=stat)
