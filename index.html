@@ -27,7 +27,7 @@ jQuery.get("data.txt", function(data) {
             })
             dataPointsVolt.push({
                 x: parseInt(allLines[i].split(" ")[0]), // timestamp
-                y: parseInt(allLines[i].split(" ")[3]) // voltage
+                y: parseFloat(allLines[i].split(" ")[3]) // voltage
             })
         }
     }
@@ -53,7 +53,7 @@ var chart = new CanvasJS.Chart("chartContainer", {
 		tickColor: "#4F81BC"
 	},
 	axisY2: {
-		title: "Battery time (min)",
+		title: "UPS battery life (min)",
 		titleFontColor: "#C0504E",
 		suffix : " min",
 		lineColor: "#C0504E",
@@ -68,7 +68,7 @@ var chart = new CanvasJS.Chart("chartContainer", {
 		dataPoints: []
 	},
 	{
-		type: "spline",  
+		type: "spline",
 		axisYType: "secondary",
 		name: "Battery time (min)",
 		yValueFormatString: "#,##0.# min",
@@ -93,7 +93,7 @@ var chart2 = new CanvasJS.Chart("chartContainer2", {
 		suffix : ""
 	},
 	axisY: {
-		title: "UPS Voltage (V)",
+		title: "UPS input voltage (V)",
 		titleFontColor: "#4F81BC",
 		suffix : " V",
 		lineColor: "#4F81BC",
@@ -101,10 +101,10 @@ var chart2 = new CanvasJS.Chart("chartContainer2", {
 	},
 	data: [{
 		type: "spline",
-		name: "Voltage (V)",
+		name: "Input voltage (V)",
         xValueType: "dateTime",
 		xValueFormatString: "D MMM Y HH:mm",
-		yValueFormatString: "# 'V'",
+		yValueFormatString: "#.0 'V'",
 		dataPoints: []
 	}]
 });

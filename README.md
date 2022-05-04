@@ -72,4 +72,4 @@ Run script using built in Synology scheduler, preferable every 1 minute to gathe
 
 ## Screenshot
 
-![alt text](/media/screenshot.PNG)
+![alt text](/media/preview.gif)
