@@ -119,6 +119,19 @@ class UPSControl:
         print(f"INFO \t: (Discord Prep) All checks passed.".expandtabs(5))
         return
 
+    def discord_notification_test(self):
+        command = f'./discord.sh \
+                    --username "UPS Bot" \
+                    --text "This is test message."'
+        out, _ = self.subprocess_cmd(command)
+        output = out.decode('UTF-8')
+        if "error!" in output:
+            exit(f"ERROR \t: (Discord Test) Error while executing .discord.sh. Message: {output}".expandtabs(5))
+        elif "fatal" in output:
+            exit(f"ERROR \t: (Discord Test) Error while executing .discord.sh. Message: {output}".expandtabs(5))
+        else:
+            exit(f"INFO \t: (Discord Test) Message sent correctly.".expandtabs(5))
+
     def discord_notification(self, battload, battery, status):
         if status != "OL":
             command = f'./discord.sh \
@@ -138,7 +151,7 @@ class UPSControl:
     @staticmethod
     def getOpt(argv):
         parser = argparse.ArgumentParser \
-            (usage="python3 main.py [-i <ups name> -n -h -s]",
+            (usage="python3 main.py [-i <ups name> -n -h -s -t]",
              description="Simple python script, gathering data from UPS connected to Synology server with optional "
                          "Discord notification if UPS starts working on battery.",
              epilog="© 2022, wiktor.kobiela", prog="UPSControl", add_help=False,
@@ -154,16 +167,22 @@ class UPSControl:
         available.add_argument('-s', action='store_true', dest="setup",
                                help="Boolean flag to setup files for data storage and discord notifications. "
                                     "Default is false.", default=False)
+        available.add_argument('-t', action='store_true', dest="test",
+                               help="Boolean flag to send test discord notification. "
+                                    "Default is false.", default=False)
 
         available.add_argument('-h', action='help', help='Show this help message and exit.')
         args = parser.parse_args()
-        return args.ups_name, args.notify, args.setup
+        return args.ups_name, args.notify, args.setup, args.test
 
 
 ups = UPSControl()
-ups_name, notify, setup = ups.getOpt(sys.argv[1:])
+ups_name, notify, setup, test = ups.getOpt(sys.argv[1:])
 if setup:
     ups.setup()
+if test:
+    ups.discord_preparation()
+    ups.discord_notification_test()
 t, load, batt, volt, stat = ups.get_data(ups_n=ups_name)
 ups.write_data(timestamp=t, battload=load, battery=batt, voltage=volt)
 if notify:
