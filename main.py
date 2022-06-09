@@ -105,8 +105,9 @@ class UPSControl:
     @staticmethod
     def discord_notification(battload, battery, status):
         if status != "OL":
-            with open('.webhook') as f: webhook = str(f.readlines())
-            content = f"**POWER WENT DOWN!** \\nStatus: {status} \\nLoad: {battload}% \\nBattery time: {battery}min"
+            # TODO: Part with reading file should be changed
+            with open('.webhook') as f: webhook = f.read().rstrip()
+            content = f"**POWER WENT DOWN!** \nStatus: {status} \nLoad: {battload}% \nBattery time: {battery}min"
             payload = {'username': 'UPS Bot', "content": {content}, "avatar_url": "https://avatarlink.com/logo.png"}
             print(payload)
             try:
@@ -152,5 +153,4 @@ if test:
 t, load, batt, volt, stat = ups.get_data(ups_n=ups_name)
 ups.write_data(timestamp=t, battload=load, battery=batt, voltage=volt)
 if notify:
-    ups.discord_preparation()
     ups.discord_notification(battload=load, battery=batt, status=stat)
