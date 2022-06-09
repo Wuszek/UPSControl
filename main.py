@@ -99,25 +99,8 @@ class UPSControl:
         except OSError as e:
             exit(f"ERROR \t: (Write Data) Exception occurred while writing data. Exception msg: {e}".expandtabs(5))
 
-    @staticmethod
-    def discord_preparation():
-        try:
-            if os.path.isfile('discord.sh'):
-                pass
-            else:
-                exit("ERROR \t: (Discord Prep) discord.sh does not exist. Run "
-                     "'python3 main.py -s'  for setup.".expandtabs(5))
-            if os.path.isfile('.webhook'):
-                if os.stat(".webhook").st_size == 0:
-                    exit("ERROR \t: (Discord Prep) .webhook file is empty. Fill it with webhook URL.".expandtabs(5))
-                pass
-            else:
-                exit("ERROR \t: (Discord Prep) No .webhook file. Run 'python3 main.py -s' for setup."
-                     "Fill .webhook file with url and run script again.".expandtabs(5))
-        except Exception as e:
-            exit(f"ERROR \t: (Discord Prep) Some exception occurred. Exception msg: {e}".expandtabs(5))
-        print(f"INFO \t: (Discord Prep) All checks passed.".expandtabs(5))
-        return
+    """
+    This method should be changed to use requests
 
     def discord_notification_test(self):
         command = f'./discord.sh \
@@ -131,22 +114,19 @@ class UPSControl:
             exit(f"ERROR \t: (Discord Test) Error while executing .discord.sh. Message: {output}".expandtabs(5))
         else:
             exit(f"INFO \t: (Discord Test) Message sent correctly.".expandtabs(5))
-
-    def discord_notification(self, battload, battery, status):
+    """
+    @staticmethod
+    def discord_notification(battload, battery, status):
         if status != "OL":
-            command = f'./discord.sh \
-                        --username "UPS Bot" \
-                        --avatar "https://avatarlink.com/logo.png" \
-                        --text "**POWER WENT DOWN!** \\nStatus: {status} ' \
-                      f'\\nLoad: {battload}% \\nBattery time: {battery}min"'
-            out, _ = self.subprocess_cmd(command)
-            output = out.decode("UTF-8")
-            if "error!" in output:
-                exit(f"ERROR \t: (Discord) Error while executing .discord.sh. Message: {output}".expandtabs(5))
-            elif "fatal" in output:
-                exit(f"ERROR \t: (Discord) Error while executing .discord.sh. Message: {output}".expandtabs(5))
-            else:
+            with open('.webhook') as f: webhook = str(f.readlines())
+            content = f"**POWER WENT DOWN!** \\nStatus: {status} \\nLoad: {battload}% \\nBattery time: {battery}min"
+            payload = {'username': 'UPS Bot', "content": {content}, "avatar_url": "https://avatarlink.com/logo.png"}
+            print(payload)
+            try:
+                requests.post(webhook, data=payload)
                 print(f"INFO \t: (Discord) Message sent correctly.".expandtabs(5))
+            except Exception as e:
+                exit(f"ERROR \t: (Discord) Error while sending message. Exception: {e}".expandtabs(5))
 
     @staticmethod
     def getOpt(argv):
@@ -181,7 +161,6 @@ ups_name, notify, setup, test = ups.getOpt(sys.argv[1:])
 if setup:
     ups.setup()
 if test:
-    ups.discord_preparation()
     ups.discord_notification_test()
 t, load, batt, volt, stat = ups.get_data(ups_n=ups_name)
 ups.write_data(timestamp=t, battload=load, battery=batt, voltage=volt)
