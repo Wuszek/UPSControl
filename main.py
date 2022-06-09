@@ -86,29 +86,26 @@ class UPSControl:
         except OSError as e:
             exit(f"ERROR \t: (Write Data) Exception occurred while writing data. Exception msg: {e}".expandtabs(5))
 
-    """
-    This method should be changed to use requests
-
-    def discord_notification_test(self):
-        command = f'./discord.sh \
-                    --username "UPS Bot" \
-                    --text "This is test message."'
-        out, _ = self.subprocess_cmd(command)
-        output = out.decode('UTF-8')
-        if "error!" in output:
-            exit(f"ERROR \t: (Discord Test) Error while executing .discord.sh. Message: {output}".expandtabs(5))
-        elif "fatal" in output:
-            exit(f"ERROR \t: (Discord Test) Error while executing .discord.sh. Message: {output}".expandtabs(5))
-        else:
+    @staticmethod
+    def discord_notification_test():
+        # TODO: Part with reading file should be changed
+        with open('.webhook') as f:
+            webhook = f.read().rstrip()
+        payload = {'username': 'UPS Bot', "content": "This is test message."}
+        try:
+            requests.post(webhook, data=payload)
             exit(f"INFO \t: (Discord Test) Message sent correctly.".expandtabs(5))
-    """
+        except Exception as e:
+            exit(f"ERROR \t: (Discord Test) Error while sending message. Exception: {e}".expandtabs(5))
+
     @staticmethod
     def discord_notification(battload, battery, status):
         if status != "OL":
             # TODO: Part with reading file should be changed
-            with open('.webhook') as f: webhook = f.read().rstrip()
+            with open('.webhook') as f:
+                webhook = f.read().rstrip()
             content = f"**POWER WENT DOWN!** \nStatus: {status} \nLoad: {battload}% \nBattery time: {battery}min"
-            payload = {'username': 'UPS Bot', "content": {content}, "avatar_url": "https://avatarlink.com/logo.png"}
+            payload = {'username': 'UPS Bot', "content": {content}}
             print(payload)
             try:
                 requests.post(webhook, data=payload)
