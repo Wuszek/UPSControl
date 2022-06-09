@@ -23,19 +23,6 @@ class UPSControl:
     @staticmethod
     def setup():
         try:
-            if os.path.isfile("discord.sh"):
-                print(f"INFO \t: (Setup) discord.sh already exists.".expandtabs(5))
-                pass
-            else:
-                try:
-                    filename = "discord.sh"
-                    url = 'https://raw.githubusercontent.com/ChaoticWeg/discord.sh/master/discord.sh'
-                    f = requests.get(url)
-                    open(filename, 'wb').write(f.content)
-                    os.popen('chmod +x discord.sh').read()
-                except OSError as e:
-                    exit(f"ERROR \t: (Setup) Exception occurred when downloading discord.sh file. "
-                         f"Exception msg: {e}".expandtabs(5))
             if os.path.isfile("data.txt"):
                 print(f"INFO \t: (Setup) data.txt already exists.".expandtabs(5))
                 pass
