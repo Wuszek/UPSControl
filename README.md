@@ -26,7 +26,6 @@ Available (optional) arguments::
   -h             Show this help message and exit.
 
 © 2022, wiktor.kobiela
-
 ```
 
 ## How does it work?
