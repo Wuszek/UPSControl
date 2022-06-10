@@ -110,7 +110,7 @@ class UPSControl:
     @staticmethod
     def getOpt(argv):
         parser = argparse.ArgumentParser \
-            (usage="python3 main.py [-i <ups name> -n -h -s -t]",
+            (usage='python3 ups.py [-i "ups name>" -n "webhook_url" -h -s -t]',
              description="Simple python script, gathering data from UPS connected to Synology server with optional "
                          "Discord notification if UPS starts working on battery.",
              epilog="© 2022, wiktor.kobiela", prog="UPSControl", add_help=False,
@@ -121,14 +121,14 @@ class UPSControl:
         available.add_argument('-i', action='store', dest="ups_name", metavar='"ups name"',
                                help='Provide ups name for upsc command. Default is "ups".', default='ups')
         available.add_argument('-n', action='store', dest="notify", metavar='"webhook_url"',
-                               help="Boolean flag to send Discord notification if UPS is working on battery. "
-                                    "Default is false.", default="no")
+                               help="Flag to send Discord notification if UPS is working on battery. "
+                                    "Default is false.", default="false")
         available.add_argument('-s', action='store_true', dest="setup",
                                help="Boolean flag to setup files for data storage and discord notifications. "
                                     "Default is false.", default=False)
-        available.add_argument('-t', action='store_true', dest="test",
-                               help="Boolean flag to send test discord notification. "
-                                    "Default is false.", default=False)
+        available.add_argument('-t', action='store', dest="test", metavar='"webhook_url"',
+                               help="Flag to send test discord notification. "
+                                    "Default is false.", default="false")
 
         available.add_argument('-h', action='help', help='Show this help message and exit.')
         args = parser.parse_args()
@@ -139,9 +139,9 @@ ups = UPSControl()
 ups_name, notify, setup, test = ups.getOpt(sys.argv[1:])
 if setup:
     ups.setup()
-if test:
-    ups.discord_notification_test(webhook=notify)
+if test != "false":
+    ups.discord_notification_test(webhook=test)
 t, load, batt, volt, stat = ups.get_data(ups_n=ups_name)
 ups.write_data(timestamp=t, battload=load, battery=batt, voltage=volt)
-if notify != "no":
+if notify != "false":
     ups.discord_notification(battload=load, battery=batt, status=stat, webhook=notify)
