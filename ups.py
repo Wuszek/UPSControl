@@ -41,6 +41,8 @@ class UPSControl:
         timestamp_milliseconds = round(timestamp_timer.time() * 1000)
         command = f"upsc {ups_n}@localhost"
         out, _ = self.subprocess_cmd(command)
+        if "not found" in out.decode("utf-8"):
+            exit(f"ERROR \t: (Get Data) There is no upsc command. Exiting.\n".expandtabs(5))
 
         load_r = r"(?<=ups.load: )(.*)(?=\n)"
         battery_runtime_r = r"(?<=battery.runtime: )(.*)(?=\n)"
