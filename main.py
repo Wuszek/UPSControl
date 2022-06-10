@@ -87,10 +87,7 @@ class UPSControl:
             exit(f"ERROR \t: (Write Data) Exception occurred while writing data. Exception msg: {e}".expandtabs(5))
 
     @staticmethod
-    def discord_notification_test():
-        # TODO: Part with reading file should be changed
-        with open('.webhook') as f:
-            webhook = f.read().rstrip()
+    def discord_notification_test(webhook):
         payload = {'username': 'UPS Bot', "content": "This is test message."}
         try:
             requests.post(webhook, data=payload)
@@ -99,11 +96,8 @@ class UPSControl:
             exit(f"ERROR \t: (Discord Test) Error while sending message. Exception: {e}".expandtabs(5))
 
     @staticmethod
-    def discord_notification(battload, battery, status):
+    def discord_notification(battload, battery, status, webhook):
         if status != "OL":
-            # TODO: Part with reading file should be changed
-            with open('.webhook') as f:
-                webhook = f.read().rstrip()
             content = f"**POWER WENT DOWN!** \nStatus: {status} \nLoad: {battload}% \nBattery time: {battery}min"
             payload = {'username': 'UPS Bot', "content": {content}}
             print(payload)
@@ -124,11 +118,11 @@ class UPSControl:
 
         available = parser.add_argument_group('Available (optional) arguments:')
 
-        available.add_argument('-i', action='store', dest="ups_name", metavar="<ups name>",
+        available.add_argument('-i', action='store', dest="ups_name", metavar='"ups name"',
                                help='Provide ups name for upsc command. Default is "ups".', default='ups')
-        available.add_argument('-n', action='store_true', dest="notify",
+        available.add_argument('-n', action='store', dest="notify", metavar='"webhook_url"',
                                help="Boolean flag to send Discord notification if UPS is working on battery. "
-                                    "Default is false.", default=False)
+                                    "Default is false.", default="no")
         available.add_argument('-s', action='store_true', dest="setup",
                                help="Boolean flag to setup files for data storage and discord notifications. "
                                     "Default is false.", default=False)
@@ -146,8 +140,8 @@ ups_name, notify, setup, test = ups.getOpt(sys.argv[1:])
 if setup:
     ups.setup()
 if test:
-    ups.discord_notification_test()
+    ups.discord_notification_test(webhook=notify)
 t, load, batt, volt, stat = ups.get_data(ups_n=ups_name)
 ups.write_data(timestamp=t, battload=load, battery=batt, voltage=volt)
-if notify:
-    ups.discord_notification(battload=load, battery=batt, status=stat)
+if notify != "no":
+    ups.discord_notification(battload=load, battery=batt, status=stat, webhook=notify)
