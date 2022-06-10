@@ -21,8 +21,8 @@ Simple python script, gathering data from UPS connected to Synology server with 
 Available (optional) arguments::
   -i "ups name"     Provide ups name for upsc command. Default is "ups".
   -n "webhook_url"  Flag to send Discord notification if UPS is working on battery. Default is false.
-  -s                Boolean flag to setup files for data storage and discord notifications. Default is false.
-  -t "webhook_url"  Flag to send test discord notification. Default is false.
+  -s                Boolean flag to setup files for data storage. After setup, script exits. Default is false.
+  -t "webhook_url"  Flag to send test Discord notification. After test, script exits. Default is false.
   -h                Show this help message and exit.
 
 © 2022, wiktor.kobiela

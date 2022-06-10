@@ -101,7 +101,7 @@ class UPSControl:
     @staticmethod
     def getOpt(argv):
         parser = argparse.ArgumentParser \
-            (usage='python3 ups.py [-i "ups name>" -n "webhook_url" -h -s -t]',
+            (usage='python3 ups.py [-i "ups name>" -n "webhook_url" -h -s -t "webhook_url"]',
              description="Simple python script, gathering data from UPS connected to Synology server with optional "
                          "Discord notification if UPS starts working on battery.",
              epilog="© 2022, wiktor.kobiela", prog="UPSControl", add_help=False,
@@ -115,10 +115,10 @@ class UPSControl:
                                help="Flag to send Discord notification if UPS is working on battery. "
                                     "Default is false.", default="false")
         available.add_argument('-s', action='store_true', dest="setup",
-                               help="Boolean flag to setup files for data storage and discord notifications. "
+                               help="Boolean flag to setup files for data storage. After setup, script exits. "
                                     "Default is false.", default=False)
         available.add_argument('-t', action='store', dest="test", metavar='"webhook_url"',
-                               help="Flag to send test discord notification. "
+                               help="Flag to send test Discord notification. After test, script exits. "
                                     "Default is false.", default="false")
 
         available.add_argument('-h', action='help', help='Show this help message and exit.')
