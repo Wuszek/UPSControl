@@ -33,15 +33,6 @@ class UPSControl:
                     exit(f"ERROR \t: (Setup) Exception occurred when creating data.txt file. "
                          f"Exception msg: {e}".expandtabs(5))
                 print(f"INFO \t: (Setup) data.txt created successfully.".expandtabs(5))
-            if os.path.isfile(".webhook"):
-                print(f"INFO \t: (Setup) .webhook already exists.".expandtabs(5))
-            else:
-                try:
-                    open(".webhook", 'a').close()
-                except OSError as e:
-                    exit(f"ERROR \t: (Setup) Exception occurred when creating .webhook file. "
-                         f"Exception msg: {e}".expandtabs(5))
-                print(f"INFO \t: (Setup) .webhook created successfully. REMEMBER TO FILL IT WITH URL!".expandtabs(5))
             exit(f"INFO \t: (Setup) Setup finished.".expandtabs(5))
         except Exception as e:
             exit(f"ERROR \t: (Setup) Some exception occurred. Exiting.\nException msg: {e}".expandtabs(5))
