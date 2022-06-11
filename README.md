@@ -11,22 +11,29 @@ and plots it on one chart. Second chart is input voltage value in time.
 It is possible to configure script to send Discord notification, when 
 UPS change status from OL (online) to another (eg. OB (on battery)).
 
+## Requirements
+
+Install requirements by:
+```bash
+python3 -m pip install -r requirements.txt
+```
+
+
 ## Help 
 
 ```bash
-usage: python3 main.py [-i <ups name> -n -h -s -t]
+usage: python3 ups.py [-i "ups name>" -n "webhook_url" -h -s -t]
 
 Simple python script, gathering data from UPS connected to Synology server with optional Discord notification if UPS starts working on battery.
 
 Available (optional) arguments::
-  -i <ups name>  Provide ups name for upsc command. Default is "ups".
-  -n             Boolean flag to send Discord notification if UPS is working on battery. Default is false.
-  -s             Boolean flag to setup files for data storage and discord notifications. Default is false.
-  -t             Boolean flag to send test discord notification. Default is false.
-  -h             Show this help message and exit.
+  -i "ups name"     Provide ups name for upsc command. Default is "ups".
+  -n "webhook_url"  Flag to send Discord notification if UPS is working on battery. Default is false.
+  -s                Boolean flag to setup files for data storage. After setup, script exits. Default is false.
+  -t "webhook_url"  Flag to send test Discord notification. After test, script exits. Default is false.
+  -h                Show this help message and exit.
 
 © 2022, wiktor.kobiela
-
 ```
 
 ## How does it work?
@@ -62,23 +69,38 @@ Script is saving info about `battery.runtime`, `ups.load` and `input.voltage`. I
 
 Help
 ```bash
-python3 main.py -h
+python3 ups.py -h
 ```
 
-Setup - create data file and .webhook file for Discord webhook url.
+Setup - create data file with load/time/status.
 ```bash
-python3 main.py -s
+python3 ups.py -s
 ```
 
 Test - send test Discord message to test notifications
 ```bash 
-python3 main.py -t
+python3 ups.py -t "webhook_url"
 ```
 
 Run with optional ups_name argument and optional Discord notification.
 ```bash 
-python3 main.py -i ups_name -n
+python3 ups.py -i "ups_name" -n "webhook_url"
 ```
+
+Example commands flow to prepare setup:
+```bash
+git clone https://git.kobiela.click/wiktor.kobiela/UPSControl.git
+cd UPSControl
+python3 -m pip install -r requirements.txt
+python3 ups.py -s 
+python3 ups.py -t "https://discord.com/api/webhooks/secret_channel_id/super_secret_webhook"
+
+Now, run every 1 minute using scheduler:
+python3 ups.py -i "ups" -n "https://discord.com/api/webhooks/secret_channel_id/super_secret_webhook"
+
+Website will be available at localhost/server IP in UPSControl folder, e.g. http://localhost/UPSControl/
+```
+
 
 It is preferred to run script using built in Synology scheduler, preferable every 1 minute to gather data.
 Also, there will be 1minute threshold for getting info about power failure and UPS running on battery.
