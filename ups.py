@@ -1,48 +1,47 @@
+import sys
+import subprocess
 import argparse
 import os
 import re
-import requests
-import subprocess
-import sys
 import time as timestamp_timer
-
+import requests
 
 class UPSControl:
 
     @staticmethod
     def subprocess_cmd(command):
         try:
-            process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True)
-            outs, errs = process.communicate()
-            process.kill()
-            return outs, errs
+            with subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True) as process:
+                outs, errs = process.communicate()
+                process.kill()
+                return outs, errs
         except (subprocess.TimeoutExpired, ValueError, OSError) as e:
             process.kill()
-            exit(f"ERROR \t: (Subprocess) Error while executing cmd: {command}\nException msg: {e}".expandtabs(5))
+            sys.exit(f"ERROR \t: (Subprocess) Error while executing cmd: {command}\nException msg: {e}".expandtabs(5))
 
     @staticmethod
     def setup():
         try:
             if os.path.isfile("data.txt"):
-                print(f"INFO \t: (Setup) data.txt already exists.".expandtabs(5))
-                pass
+                print("INFO \t: (Setup) data.txt already exists.".expandtabs(5))
             else:
                 try:
-                    open("data.txt", 'a').close()
+                     with open("data.txt", 'a', encoding='utf-8') as file:
+                         file.close()
                 except OSError as e:
-                    exit(f"ERROR \t: (Setup) Exception occurred when creating data.txt file. "
-                         f"Exception msg: {e}".expandtabs(5))
-                print(f"INFO \t: (Setup) data.txt created successfully.".expandtabs(5))
-            exit(f"INFO \t: (Setup) Setup finished.".expandtabs(5))
+                    sys.exit(f"ERROR \t: (Setup) Exception occurred when creating data.txt file. "
+                             f"Exception msg: {e}".expandtabs(5))
+                print("INFO \t: (Setup) data.txt created successfully.".expandtabs(5))
+            sys.exit("INFO \t: (Setup) Setup finished.".expandtabs(5))
         except Exception as e:
-            exit(f"ERROR \t: (Setup) Some exception occurred. Exiting.\nException msg: {e}".expandtabs(5))
+            sys.exit(f"ERROR \t: (Setup) Some exception occurred. Exiting.\nException msg: {e}".expandtabs(5))
 
     def get_data(self, ups_n):
         timestamp_milliseconds = round(timestamp_timer.time() * 1000)
         command = f"upsc {ups_n}@localhost"
         out, _ = self.subprocess_cmd(command)
         if "not found" in out.decode("utf-8"):
-            exit(f"ERROR \t: (Get Data) There is no upsc command. Exiting.\n".expandtabs(5))
+            sys.exit("ERROR \t: (Get Data) There is no upsc command. Exiting.\n".expandtabs(5))
 
         load_r = r"(?<=ups.load: )(.*)(?=\n)"
         battery_runtime_r = r"(?<=battery.runtime: )(.*)(?=\n)"
@@ -57,7 +56,7 @@ class UPSControl:
             input_voltage_match = re.findall(input_voltage_r, current_info)[0]
             ups_status_match = re.findall(ups_status_r, current_info)[0]
         except Warning as w:
-            exit(f"ERROR \t: (Get Data) Exception msg: {w}".expandtabs(5))
+            sys.exit(f"ERROR \t: (Get Data) Exception msg: {w}".expandtabs(5))
 
         print(f"INFO \t: (Get Data) {timestamp_milliseconds} timestamp milliseconds".expandtabs(5))
         print(f"INFO \t: (Get Data) {load_match}% UPS load".expandtabs(5))
@@ -69,7 +68,7 @@ class UPSControl:
     @staticmethod
     def write_data(timestamp, battload, battery, voltage):
         try:
-            with open("data.txt", "r+") as file:
+            with open("data.txt", "r+", encoding='utf-8') as file:
                 lines = file.readlines()
                 if len(lines) >= 1440:
                     file.seek(0)
@@ -77,16 +76,16 @@ class UPSControl:
                     file.writelines(lines[1:])
                 file.writelines(f"{timestamp} {battload} {battery} {voltage}\n")
         except OSError as e:
-            exit(f"ERROR \t: (Write Data) Exception occurred while writing data. Exception msg: {e}".expandtabs(5))
+            sys.exit(f"ERROR \t: (Write Data) Exception occurred while writing data. Exception msg: {e}".expandtabs(5))
 
     @staticmethod
     def discord_notification_test(webhook):
         payload = {'username': 'UPS Bot', "content": "This is test message."}
         try:
             requests.post(webhook, data=payload)
-            exit(f"INFO \t: (Discord Test) Message sent correctly.".expandtabs(5))
+            sys.exit("INFO \t: (Discord Test) Message sent correctly.".expandtabs(5))
         except Exception as e:
-            exit(f"ERROR \t: (Discord Test) Error while sending message. Exception: {e}".expandtabs(5))
+            sys.exit(f"ERROR \t: (Discord Test) Error while sending message. Exception: {e}".expandtabs(5))
 
     @staticmethod
     def discord_notification(battload, battery, status, webhook):
@@ -96,9 +95,9 @@ class UPSControl:
             print(payload)
             try:
                 requests.post(webhook, data=payload)
-                print(f"INFO \t: (Discord) Message sent correctly.".expandtabs(5))
+                print("INFO \t: (Discord) Message sent correctly.".expandtabs(5))
             except Exception as e:
-                exit(f"ERROR \t: (Discord) Error while sending message. Exception: {e}".expandtabs(5))
+                sys.exit(f"ERROR \t: (Discord) Error while sending message. Exception: {e}".expandtabs(5))
 
     @staticmethod
     def getOpt(argv):
